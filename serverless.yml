@@ -1,0 +1,50 @@
+service: mentoria-serverless
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+
+functions:
+  parser:
+    handler: handler.parser
+  approve:
+    handler: handler.approve
+  reject:
+    handler: handler.reject
+
+stepFunctions:
+  stateMachines:
+    feedbackStateMachine:
+        name: feedbackStateMachine
+        definition:
+          Comment: This is your state machine
+          StartAt: Parser
+          States:
+            Parser:
+              Type: Task
+              Resource:
+                Fn::GetAtt: [parser, Arn]
+              Next: Decider
+            Decider:
+              Type: Choice
+              Choices:
+              - Variable: "$.valid"
+                BooleanEquals: true
+                Next: Approve
+              - Variable: "$.valid"
+                BooleanEquals: false
+                Next: Reject
+            Approve:
+              Type: Task
+              Resource:
+                Fn::GetAtt: [approve, Arn]
+              End: true
+            Reject:
+              Type: Task
+              Resource:
+                Fn::GetAtt: [reject, Arn]
+              End: true
+plugins:
+  - serverless-step-functions
