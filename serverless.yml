@@ -27,10 +27,6 @@ functions:
     handler: handler.approve
   reject:
     handler: handler.reject
-  trigger:
-    handler: handler.trigger
-    environment:
-      STATE_MACHINE_ARN: ''
 
 constructs:
   mentoriaQueue:
