@@ -5,14 +5,38 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: nodejs14.x
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - states:StartExecution
+      Resource: '*'
 
 functions:
+  create:
+    handler: handler.create
+    events:
+      - http:
+          path: create
+          method: post
+          cors: true
+    environment:
+      QUEUE_URL: ${construct:mentoriaQueue.queueUrl}
   parser:
     handler: handler.parser
   approve:
     handler: handler.approve
   reject:
     handler: handler.reject
+  trigger:
+    handler: handler.trigger
+    environment:
+      STATE_MACHINE_ARN: ''
+
+constructs:
+  mentoriaQueue:
+    type: queue
+    worker:
+      handler: handler.trigger
 
 stepFunctions:
   stateMachines:
@@ -46,5 +70,7 @@ stepFunctions:
               Resource:
                 Fn::GetAtt: [reject, Arn]
               End: true
+
 plugins:
   - serverless-step-functions
+  - serverless-lift
