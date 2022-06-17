@@ -6,7 +6,8 @@ const validObject = ({ name, email, caps}) => {
 };
 
 module.exports.create = async (event) => {
-  if (!validObject(event)) {
+  const { body } = event;
+  if (!validObject(body)) {
     return {
       statusCode: 400,
       headers: {
@@ -18,7 +19,7 @@ module.exports.create = async (event) => {
 
   const params = {
     DelaySeconds: 10,
-    MessageBody: JSON.stringify(event),
+    MessageBody: JSON.stringify(body),
     QueueUrl: proccess.env.QUEUE_URL,
   };
 
@@ -72,7 +73,7 @@ module.exports.parser = async (event) => {
   return {
     name: event.name,
     email: event.email,
-    valid: !blockingCaps.includes(event.caps),
+    valid: blockingCaps.indexOf(event.caps) === -1,
   };
 };
 
