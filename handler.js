@@ -1,8 +1,8 @@
 'use strict';
 const AWS = require('aws-sdk');
 
-const validObject = ({ name, email, caps}) => {
-  return !!name && !!email && !!caps;
+const validObject = ({ name, email, caps, phoneNumber }) => {
+  return !!name && !!email && !!caps && !!phoneNumber;
 };
 
 const returnResponse = ({ status, body }) => {
@@ -42,13 +42,42 @@ const startStepExecution = (params) => {
   });
 };
 
+const sendSMSMessage = async (params) => {
+  const pinPoint = new AWS.Pinpoint();
+  const pinPointApplicationId = process.env.PINPOINT_APPLICATION_ID;
+  const { phoneNumber, body } = params;
+  const message = {
+    ApplicationId: pinPointApplicationId,
+    MessageRequest: {
+      Addresses: {
+        [phoneNumber]: {
+          ChannelType: 'SMS'
+        }
+      }
+    },
+    MessageConfiguration: {
+      SMSMessage: {
+        MessageType: 'TRANSACTIONAL',
+        Body: body
+      }
+    }
+  };
+
+  try {
+    await pinPoint.sendMessages(message).promise();
+    console.log(params);
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 module.exports.create = async ({ body }) => {
   try {
     const data = JSON.parse(body);
     if (!validObject(data)) {
       return returnResponse({
         status: 400,
-        body: { message: 'Missing required keys'},
+        body: { message: 'Missing required keys' },
       });
     }
 
@@ -62,7 +91,7 @@ module.exports.create = async ({ body }) => {
 
     return returnResponse({
       status: 200,
-      body: { message: 'Message scheduled with success'},
+      body: { message: 'Message scheduled with success' },
     });
   } catch (error) {
     console.log(error);
@@ -93,15 +122,21 @@ module.exports.parser = async (event) => {
   const blockingCaps = ['mentoria', 'labs', 'artigo'];
   const validCaps = ['palestra', 'workshop']
   const data = JSON.parse(event);
-  const { name, email, caps} = data;
+  const { name, email, caps, phoneNumber } = data;
   return {
     name,
     email,
+    phoneNumber,
     valid: blockingCaps.indexOf(caps) === -1 && validCaps.indexOf(caps) >= 0,
   };
 };
 
 module.exports.approve = async (event) => {
+  const message = {
+    phoneNumber: event.phoneNumber,
+    body: `Sua participação no ${event.caps} foi aprovada.`
+  }
+  await sendSMSMessage(message);
   return {
     approved: true,
     email: event.email,
@@ -109,6 +144,11 @@ module.exports.approve = async (event) => {
 };
 
 module.exports.reject = async (event) => {
+  const message = {
+    phoneNumber: event.phoneNumber,
+    body: `Sua participação no ${event.caps} foi rejeitada.`
+  }
+  await sendSMSMessage(message);
   return {
     approved: false,
     email: event.email,

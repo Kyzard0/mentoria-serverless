@@ -10,6 +10,10 @@ provider:
       Action:
         - states:StartExecution
       Resource: '*'
+    - Effect: Allow
+      Action:
+        - mobiletargeting:SendMessages
+      Resource: '*'
 
 functions:
   create:
@@ -25,19 +29,25 @@ functions:
     handler: handler.parser
   approve:
     handler: handler.approve
+    environment:
+      PINPOINT_APPLICATION_ID: ${self:resources.Outputs.PinpointApp.Value}
   reject:
     handler: handler.reject
+    environment:
+      PINPOINT_APPLICATION_ID: ${self:resources.Outputs.PinpointApp.Value}
 
 constructs:
   mentoriaQueue:
     type: queue
     worker:
       handler: handler.trigger
+      environment:
+        STATE_MACHINE_ARN: ${self:resources.Outputs.FeedbackStateMachine.Value}
 
 stepFunctions:
   stateMachines:
-    feedbackStateMachine:
-        name: feedbackStateMachine
+    FeedbackStateMachine:
+        name: FeedbackStateMachine
         definition:
           Comment: This is your state machine
           StartAt: Parser
@@ -66,6 +76,24 @@ stepFunctions:
               Resource:
                 Fn::GetAtt: [reject, Arn]
               End: true
+
+resources:
+  Resources:
+    PinpointApp:
+      Type: 'AWS::Pinpoint::App'
+      Properties:
+        name: reporter
+    # PinpointSMSChannel:
+    #   Type: 'AWS::Pinpoint::SMSChannel'
+    #   Properties:
+    #     Ref: ${self:resources.Outputs.PinpointApp.Value}
+  Outputs:
+    FeedbackStateMachine:
+      Value:
+        Ref: FeedbackStateMachine
+    PinpointApp:
+      Value:
+        Ref: PinpointApp
 
 plugins:
   - serverless-step-functions
