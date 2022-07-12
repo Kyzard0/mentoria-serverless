@@ -82,11 +82,11 @@ resources:
     PinpointApp:
       Type: 'AWS::Pinpoint::App'
       Properties:
-        name: reporter
-    # PinpointSMSChannel:
-    #   Type: 'AWS::Pinpoint::SMSChannel'
-    #   Properties:
-    #     Ref: ${self:resources.Outputs.PinpointApp.Value}
+        Name: reporter
+    PinpointSMSChannel:
+      Type: 'AWS::Pinpoint::SMSChannel'
+      Properties:
+        ApplicationId: ${self:resources.Outputs.PinpointApp.Value}
   Outputs:
     FeedbackStateMachine:
       Value:

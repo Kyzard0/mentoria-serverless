@@ -53,12 +53,12 @@ const sendSMSMessage = async (params) => {
         [phoneNumber]: {
           ChannelType: 'SMS'
         }
-      }
-    },
-    MessageConfiguration: {
-      SMSMessage: {
-        MessageType: 'TRANSACTIONAL',
-        Body: body
+      },
+      MessageConfiguration: {
+        SMSMessage: {
+          MessageType: 'TRANSACTIONAL',
+          Body: body
+        }
       }
     }
   };
